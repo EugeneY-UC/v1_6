@@ -60,8 +60,13 @@ BLINK_PAUSE = 150                               # 350
 
 show_all_nodes_in_admin_mode = False            # Shift-F2
 show_node_status_in_admin_mode = False          # Shift-F3
+
 time_label_active = True                        # Shift-F5
 hundreds_label_active = False                   # Shift-F6
+
+show_rate_fourth_screen = True                  # Shift-F7
+show_kwh_fourth_screen = False                  # Shift-F8
+show_rate_second_screen = True                  # Shift-F9
 
 terminal_output = True                          # Alt-F5
 terminal_header = True                          # Alt-F6
@@ -69,7 +74,7 @@ terminal_header = True                          # Alt-F6
 poll_active = True                              # Alt-Shift-C
 can1_configured = False
 
-node_reset_when_can_reconnected = False          # Control-F5
+node_reset_when_can_reconnected = False         # Control-F5
 node_reset_when_node_get_disabled = True        # Control-F6
 node_reset_when_user_unplug_cable = False       # Control-F12
 
@@ -711,9 +716,10 @@ class NodesCan:
         self.__nodes = self.populate_nodes_com()
 
         self.__time_stamp = datetime.now()
+        self.__time_cycles_max = 8
+        self.__time_cycles_count = 0
         self.__node_bank_count = 0
         self.__node_count = 0
-        self.__current_node_static = None
         self.__current_node_active = None
 
         self.__restart_command = False
@@ -769,6 +775,23 @@ class NodesCan:
                                      fg=color_front,
                                      bg=color_back)
         self.__label_time.place(relx=0.55, rely=0.05, anchor='nw')
+
+        self.__label_price = tk.Label(frame_4,
+                                      text='',
+                                      font=font_3,
+                                      # fg=color_front,
+                                      fg=color_back_rates,
+                                      bg=color_back)
+        self.__label_price.place(relx=0.25, rely=0.0725, anchor='ne')
+
+        self.__label_price_kwh = tk.Label(frame_4,
+                                          font=font_2,
+                                          # fg=color_front,
+                                          fg=color_back_rates,
+                                          bg=color_back)
+        self.__label_price_kwh.place(relx=0.25, rely=0.08375, anchor='nw')
+        if show_kwh_fourth_screen:
+            self.__label_price_kwh.configure(text=" ($kWh)")
 
         time.sleep(1.0)
         self.main_cycle()
@@ -829,6 +852,12 @@ class NodesCan:
                 car_connected = node_state == 0x03 or node_state == 0x04 or node_state == 0x05
                 if not car_connected:
                     self.disable_charging_node_number(node_number)
+
+    def get_label_price(self):
+        return self.__label_price
+
+    def get_label_price_kwh(self):
+        return self.__label_price_kwh
 
     def msg_get_state_polling(self):
         return can.Message(arbitration_id=0x400 | self.__node_count << 4,
@@ -1301,6 +1330,13 @@ class NodesCan:
         else:
             time_text = ''
         self.__label_time.configure(text=time_text)
+        current_price = daily_prices.get_current_price()
+        if self.__time_cycles_count == 0:
+            current_price_str = str(current_price / 100_000)
+            if show_rate_second_screen:
+                name_cur_price.set(current_price_str)
+            if show_rate_fourth_screen:
+                self.__label_price.configure(text="$ " + current_price_str)
         if key_pad.read_key():
             if terminal_output:
                 self.print_key_info_to_terminal()
@@ -1336,6 +1372,10 @@ class NodesCan:
                         self.__restart_cycles_count = 0
         else:
             self.disable_blinking()
+        if self.__time_cycles_count == self.__time_cycles_max:
+            self.__time_cycles_count = 0
+        else:
+            self.__time_cycles_count += 1
         self.__label_time.after(POLL_TIME, self.main_cycle)
 
 
@@ -1891,6 +1931,33 @@ class DailyPrices:
                 row_count += 1
         return new_daily_prices
 
+    def get_price_by_time(self, datetime_at_some_time):
+        price = 0
+        if datetime_at_some_time.weekday() < 5:
+            time_price_dict = self.__prices[0].time_price
+        else:
+            time_price_dict = self.__prices[1].time_price
+        for time_point_num in time_price_dict:
+            time_point = time_price_dict[time_point_num][0]
+            datetime_point = datetime.combine(datetime_at_some_time.date(), time_point)
+            if datetime_at_some_time > datetime_point:
+                price = time_price_dict[time_point_num][1]
+        return int(price)
+
+    def get_current_price(self):
+        current_datetime = datetime.now()
+        price = 0
+        if current_datetime.weekday() < 5:
+            time_price_dict = self.__prices[0].time_price
+        else:
+            time_price_dict = self.__prices[1].time_price
+        for time_point_num in time_price_dict:
+            time_point = time_price_dict[time_point_num][0]
+            datetime_point = datetime.combine(current_datetime.date(), time_point)
+            if current_datetime > datetime_point:
+                price = time_price_dict[time_point_num][1]
+        return int(price)
+
 
 # noinspection PyUnusedLocal
 def to_full_screen(event):
@@ -2417,6 +2484,56 @@ def hundreds_label_on_off(event):
 
 
 # noinspection PyUnusedLocal
+def energy_rate_fourth_screen_on_off(event):
+    global show_rate_fourth_screen
+    if not debug_mode:
+        if show_rate_fourth_screen:
+            show_rate_fourth_screen = False
+            nodes_can.get_label_price().configure(text="")
+            nodes_can.get_label_price_kwh().configure(text="")
+            show_service_key_message("NO ENERGY RATE on 'Charger #' Info screen")
+        else:
+            show_rate_fourth_screen = True
+            if show_kwh_fourth_screen:
+                nodes_can.get_label_price_kwh().configure(text=" ($/kwh)")
+            show_service_key_message("ENERGY RATE on 'Charger #' Info screen")
+
+
+# noinspection PyUnusedLocal
+def kwh_fourth_screen_on_off(event):
+    global show_kwh_fourth_screen
+    if not debug_mode:
+        if show_kwh_fourth_screen:
+            show_kwh_fourth_screen = False
+            nodes_can.get_label_price_kwh().configure(text="")
+            show_service_key_message("NO KWH on 'Charger #' Info screen")
+        else:
+            show_kwh_fourth_screen = True
+            if show_rate_fourth_screen:
+                nodes_can.get_label_price_kwh().configure(text=" ($/kwh)")
+            show_service_key_message("KWH on 'Charger #' Info screen")
+
+
+# noinspection PyUnusedLocal
+def energy_rate_second_screen_on_off(event):
+    global show_rate_second_screen
+    if not debug_mode:
+        if show_rate_second_screen:
+            show_rate_second_screen = False
+            name_cur_price.set("")
+            label_2_1_1.configure(text="")
+            label_2_1_2.configure(text="")
+            entry_2_0.configure(relief='flat')
+            show_service_key_message("NO ENERGY RATE on entering 'Charger #' screen")
+        else:
+            show_rate_second_screen = True
+            label_2_1_1.configure(text="Current Rate:")
+            label_2_1_2.configure(text="($/kWh)")
+            entry_2_0.configure(relief='sunken')
+            show_service_key_message("ENERGY RATE on entering 'Charger #' screen")
+
+
+# noinspection PyUnusedLocal
 def show_node_user_or_admin(event):
     global show_node_status_in_admin_mode
     if not debug_mode:
@@ -2686,6 +2803,7 @@ color_input_background_yellow = '#FFFFD0'
 color_message_red = 'red'
 color_message_grey = 'grey'
 color_input_background_grey = 'dark grey'
+color_back_rates = 'light slate blue'
 # noinspection SpellCheckingInspection
 color_message_green = 'lightgreen'
 # noinspection SpellCheckingInspection
@@ -2837,7 +2955,6 @@ label_1_2.place(relx=0.5, rely=0.85, anchor="n")
 frame_2 = tk.Frame(root, bg='white')
 
 
-# frame_2_1 = tk.Frame(frame_2, bg='white')
 frame_2_1 = tk.Frame(frame_2, bg=color_back)
 frame_2_1.place(relwidth=1, relheight=0.8)
 
@@ -2866,7 +2983,7 @@ label_2_2_1 = tk.Label(frame_2_1,
                        bg=color_back)
 label_2_2_1.place(relx=0.525, rely=0.425, anchor='center')
 
-name_cur_price.set('$0.182')
+# name_cur_price.set('$0.182')
 entry_2_0 = tk.Entry(frame_2_1,
                      textvariable=name_cur_price,
                      font=font_3,
@@ -5945,6 +6062,9 @@ root.bind("<Shift-F2>", show_single_or_all_nodes)
 root.bind("<Shift-F3>", show_node_user_or_admin)
 root.bind("<Shift-F5>", time_label_on_off)
 root.bind("<Shift-F6>", hundreds_label_on_off)
+root.bind("<Shift-F7>", energy_rate_fourth_screen_on_off)
+root.bind("<Shift-F8>", kwh_fourth_screen_on_off)
+root.bind("<Shift-F9>", energy_rate_second_screen_on_off)
 
 # Alt Hot-Keys for Logging Mode
 # root.bind("<Shift-F11>", terminal_on_off)
