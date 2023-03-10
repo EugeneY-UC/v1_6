@@ -2034,6 +2034,9 @@ def show_service_key_message(msg):
     global service_key_counter
     service_key_counter += 1
     label_4_0.configure(text=msg)
+    label_0_0.configure(text=msg)
+    label_1_0.configure(text=msg)
+    label_2_0.configure(text=msg)
     label_4_0.after(SERVICE_KEY_MESSAGE_TIME, hide_service_key_message)
 
 
@@ -2041,7 +2044,10 @@ def hide_service_key_message():
     global service_key_counter
     service_key_counter -= 1
     if service_key_counter == 0:
-        label_4_0.configure(text='')
+        label_4_0.configure(text="")
+        label_0_0.configure(text="")
+        label_1_0.configure(text="")
+        label_2_0.configure(text="")
 
 
 # noinspection PyUnusedLocal
@@ -2855,17 +2861,24 @@ if png_welcome_frame.is_file():
     # img_0 = ImageTk.PhotoImage(img)
     img_0 = ImageTk.PhotoImage(img_resized)
 
-    label_0_0 = tk.Label(frame_0,
-                         bg=color_back,
-                         image=img_0)
-    label_0_0.pack(fill="both", expand=True)
+    label_0 = tk.Label(frame_0,
+                       bg=color_back,
+                       image=img_0)
+    label_0.pack(fill="both", expand=True)
 else:
     img = Image.open(png_logo_small)
     img_0 = ImageTk.PhotoImage(img)
+    label_0 = tk.Label(frame_0,
+                       bg=color_back,
+                       image=img_0)
+    label_0.place(relx=0.5, rely=0.05, anchor='n')
+
     label_0_0 = tk.Label(frame_0,
-                         bg=color_back,
-                         image=img_0)
-    label_0_0.place(relx=0.5, rely=0.05, anchor='n')
+                         text="",
+                         font=font_13_bold,
+                         fg=color_message_grey,
+                         bg=color_back)
+    label_0_0.place(relx=0.5, rely=0.05, anchor='s')
 
     # noinspection SpellCheckingInspection
     label_0_1 = tk.Label(frame_0,
@@ -2888,11 +2901,18 @@ font_1_1 = tk_font.Font(family='Verdana', size=48)
 font_1_1_bold = tk_font.Font(family='Verdana', size=56, weight='bold')
 font_1_2 = tk_font.Font(family='Verdana', size=64, weight='bold')
 
-label_1 = tk.Label(frame_1, text="Enter " + str(PIN_TEXT_LENGTH) + "-digit PIN",
-                   font=font_1_1,
-                   fg=color_front,
-                   bg=color_back)
-label_1.place(relx=0.5, rely=0.3, anchor='center')
+label_1_0 = tk.Label(frame_1,
+                     text="",
+                     font=font_13_bold,
+                     fg=color_message_grey,
+                     bg=color_back)
+label_1_0.place(relx=0.5, rely=0.05, anchor='s')
+
+label_1_1 = tk.Label(frame_1, text="Enter " + str(PIN_TEXT_LENGTH) + "-digit PIN",
+                     font=font_1_1,
+                     fg=color_front,
+                     bg=color_back)
+label_1_1.place(relx=0.5, rely=0.3, anchor='center')
 
 
 def get_entry_1(event):
@@ -2960,6 +2980,13 @@ frame_2_1.place(relwidth=1, relheight=0.8)
 
 frame_2_2 = tk.Frame(frame_2, bg=color_back)
 frame_2_2.place(rely=0.8, relwidth=1, relheight=0.2)
+
+label_2_0 = tk.Label(frame_2,
+                     text="",
+                     font=font_13_bold,
+                     fg=color_message_grey,
+                     bg=color_back)
+label_2_0.place(relx=0.5, rely=0.05, anchor='s')
 
 label_2_1_1 = tk.Label(frame_2_1,
                        text="Current Rate:",
