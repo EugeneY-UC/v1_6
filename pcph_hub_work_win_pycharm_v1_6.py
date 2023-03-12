@@ -68,6 +68,9 @@ show_rate_fourth_screen = True                  # Shift-F7
 show_kwh_fourth_screen = False                  # Shift-F8
 show_rate_second_screen = True                  # Shift-F9
 
+show_pin_entered = False                        # Shift-F11
+show_admin_pass_entered = False                 # Shift-F12
+
 terminal_output = True                          # Alt-F5
 terminal_header = True                          # Alt-F6
 
@@ -1884,7 +1887,7 @@ class DailyPrice:
 
 class DailyPrices:
 
-    def __init__(self, path='CSV\\daily_prices_short.csv'):
+    def __init__(self, path='CSV//daily_prices_short.csv'):
         self.__prices = self.__read_csv(path)
 
     @property
@@ -2529,14 +2532,42 @@ def energy_rate_second_screen_on_off(event):
             name_cur_price.set("")
             label_2_1_1.configure(text="")
             label_2_1_2.configure(text="")
-            entry_2_0.configure(relief='flat')
-            show_service_key_message("NO ENERGY RATE on entering 'Charger #' screen")
+            entry_2_0.configure(relief='flat', highlightthickness=0)
+            show_service_key_message("NO ENERGY RATE in 'Entering Charger #' screen")
         else:
             show_rate_second_screen = True
             label_2_1_1.configure(text="Current Rate:")
             label_2_1_2.configure(text="($/kWh)")
             entry_2_0.configure(relief='sunken')
-            show_service_key_message("ENERGY RATE on entering 'Charger #' screen")
+            show_service_key_message("ENERGY RATE in 'Entering Charger #' screen")
+
+
+# noinspection PyUnusedLocal
+def user_pin_show_or_hide(event):
+    global show_pin_entered
+    if not debug_mode:
+        if show_pin_entered:
+            show_pin_entered = False
+            entry_1.configure(show='*')
+            show_service_key_message("HIDE User's PIN")
+        else:
+            show_pin_entered = True
+            entry_1.configure(show='')
+            show_service_key_message("SHOW User's PIN")
+
+
+# noinspection PyUnusedLocal
+def admin_pass_show_or_hide(event):
+    global show_admin_pass_entered
+    if not debug_mode:
+        if show_admin_pass_entered:
+            show_admin_pass_entered = False
+            entry_a_1.configure(show='*')
+            show_service_key_message("HIDE Admin Pass")
+        else:
+            show_admin_pass_entered = True
+            entry_a_1.configure(show='')
+            show_service_key_message("SHOW Admin Pass")
 
 
 # noinspection PyUnusedLocal
@@ -2956,7 +2987,7 @@ entry_1 = tk.Entry(frame_1,
                    textvariable=name_pin,
                    font=font_1_2,
                    width=PIN_TEXT_LENGTH,
-                   # show='*',
+                   show='*',
                    bg=color_entry_back)
 entry_1.bind("<Escape>", clear_entry_1)
 entry_1.bind("<<KpCancel>>", clear_entry_1)
@@ -6087,11 +6118,16 @@ root.bind("<Shift-Escape>", to_zero_screen)
 # Shift Hot-Keys for User Screens Appearance
 root.bind("<Shift-F2>", show_single_or_all_nodes)
 root.bind("<Shift-F3>", show_node_user_or_admin)
+
 root.bind("<Shift-F5>", time_label_on_off)
 root.bind("<Shift-F6>", hundreds_label_on_off)
+
 root.bind("<Shift-F7>", energy_rate_fourth_screen_on_off)
 root.bind("<Shift-F8>", kwh_fourth_screen_on_off)
 root.bind("<Shift-F9>", energy_rate_second_screen_on_off)
+
+root.bind("<Shift-F11>", user_pin_show_or_hide)
+root.bind("<Shift-F12>", admin_pass_show_or_hide)
 
 # Alt Hot-Keys for Logging Mode
 # root.bind("<Shift-F11>", terminal_on_off)
