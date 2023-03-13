@@ -79,6 +79,7 @@ can1_configured = False
 
 node_reset_when_can_reconnected = False         # Control-F5
 node_reset_when_node_get_disabled = True        # Control-F6
+debug_screen_power_map = False                  # Control-F11
 node_reset_when_user_unplug_cable = False       # Control-F12
 
 force_charging_enabled = False                  # Ctrl-Shift-C
@@ -185,10 +186,52 @@ class KeyPad:
         if frame_num == 102:
             if self.__key_code == 0x07:
                 frame_a_2.event_generate('<<KpCancel>>', when='tail')
-            if self.__key_code == 0x17:
-                frame_a_2.event_generate('<<KpEnter>>', when='tail')
             if num_pad_num_pressed != '':
                 frame_a_2.event_generate('<<KpNum>>', when='tail')
+        if frame_num == 103:
+            if self.__key_code == 0x07:
+                frame_a_3.event_generate('<<KpCancel>>', when='tail')
+            if num_pad_num_pressed != '':
+                frame_a_3.event_generate('<<KpNum>>', when='tail')
+        if frame_num == 108:
+            if subframe_num == 11:
+                if self.__key_code == 0x07:
+                    entry_a_8_1_1.event_generate('<<KpCancel>>', when='tail')
+                if self.__key_code == 0x17:
+                    entry_a_8_1_1.event_generate('<<KpEnter>>', when='tail')
+                if num_pad_num_pressed != '':
+                    entry_a_8_1_1.event_generate('<<KpNum>>', when='tail')
+            if subframe_num == 12:
+                if self.__key_code == 0x07:
+                    entry_a_8_1_2.event_generate('<<KpCancel>>', when='tail')
+                if self.__key_code == 0x17:
+                    entry_a_8_1_2.event_generate('<<KpEnter>>', when='tail')
+                if num_pad_num_pressed != '':
+                    entry_a_8_1_2.event_generate('<<KpNum>>', when='tail')
+            if subframe_num == 2:
+                if self.__key_code == 0x07:
+                    frame_a_8_2.event_generate('<<KpCancel>>', when='tail')
+                if self.__key_code == 0x17:
+                    frame_a_8_2.event_generate('<<KpEnter>>', when='tail')
+            if subframe_num == 31:
+                if self.__key_code == 0x07:
+                    entry_a_8_3_1.event_generate('<<KpCancel>>', when='tail')
+                if self.__key_code == 0x17:
+                    entry_a_8_3_1.event_generate('<<KpEnter>>', when='tail')
+                if num_pad_num_pressed != '':
+                    entry_a_8_3_1.event_generate('<<KpNum>>', when='tail')
+            if subframe_num == 32:
+                if self.__key_code == 0x07:
+                    entry_a_8_3_2.event_generate('<<KpCancel>>', when='tail')
+                if self.__key_code == 0x17:
+                    entry_a_8_3_2.event_generate('<<KpEnter>>', when='tail')
+                if num_pad_num_pressed != '':
+                    entry_a_8_3_2.event_generate('<<KpNum>>', when='tail')
+            if subframe_num == 4:
+                frame_a_8_4.event_generate('<<KpAnyKey>>', when='tail')
+        if frame_num == 111:
+            if self.__key_code == 0x07:
+                frame_a_11.event_generate('<<KpCancel>>', when='tail')
 
 
 class PowerLine:
@@ -2079,11 +2122,13 @@ def to_eleven_admin(event):
 # noinspection PyUnusedLocal
 def to_eight_admin(event):
     global frame_num
+    global subframe_num
     if frame_num == 101:
         frame_a_1.pack_forget()
     if frame_num == 102:
         frame_a_2.pack_forget()
     frame_num = 108
+    subframe_num = 11
     name_admin_pin.set('')
     name_admin_pin_confirm.set('')
     name_admin_pass.set('')
@@ -2563,10 +2608,14 @@ def user_pin_show_or_hide(event):
         if show_pin_entered:
             show_pin_entered = False
             entry_1.configure(show='*')
+            entry_a_8_1_1.configure(show='*')
+            entry_a_8_1_2.configure(show='*')
             show_service_key_message("HIDE User's PIN")
         else:
             show_pin_entered = True
             entry_1.configure(show='')
+            entry_a_8_1_1.configure(show='')
+            entry_a_8_1_2.configure(show='')
             show_service_key_message("SHOW User's PIN")
 
 
@@ -2577,10 +2626,14 @@ def admin_pass_show_or_hide(event):
         if show_admin_pass_entered:
             show_admin_pass_entered = False
             entry_a_1.configure(show='*')
+            entry_a_8_3_1.configure(show='*')
+            entry_a_8_3_2.configure(show='*')
             show_service_key_message("HIDE Admin Pass")
         else:
             show_admin_pass_entered = True
             entry_a_1.configure(show='')
+            entry_a_8_3_1.configure(show='')
+            entry_a_8_3_2.configure(show='')
             show_service_key_message("SHOW Admin Pass")
 
 
@@ -2616,6 +2669,17 @@ def poll_on_off(event):
     else:
         poll_active = True
         show_service_key_message("CAN-Bus ON")
+
+
+# noinspection PyUnusedLocal
+def debug_screen_power_map_on_off(event):
+    global debug_screen_power_map
+    if debug_screen_power_map:
+        debug_screen_power_map = False
+        show_service_key_message("HIDE DEBUG Power Map")
+    else:
+        debug_screen_power_map = True
+        show_service_key_message("SHOW DEBUG Power Map")
 
 
 # noinspection PyUnusedLocal
@@ -3334,24 +3398,26 @@ label_a_2_3 = tk.Label(frame_a_2_3,
                        fg='white')
 label_a_2_3.place(relx=0.5, rely=0.5, anchor='center')
 
-frame_a_3 = tk.Frame(root, bg=color_back)
-
 
 def key_press_a_3(event):
-    if event.keysym == '1':
+    if event.keysym == '1' or num_pad_num_pressed == '1':
         to_eleven_admin(event)
-    elif event.keysym == '2':
+    elif event.keysym == '2' or num_pad_num_pressed == '2':
         to_forty_one_admin(event)
-    elif event.keysym == '3':
+    elif event.keysym == '3' or num_pad_num_pressed == '3':
         to_forty_two_admin(event)
-    elif event.keysym == '4':
+    elif event.keysym == '4' or num_pad_num_pressed == '4':
         to_thirty_one_admin(event)
-    elif event.keysym == '5':
+    elif event.keysym == '5' or num_pad_num_pressed == '5':
         to_thirty_two_admin(event)
 
 
+frame_a_3 = tk.Frame(root, bg=color_back)
+
 frame_a_3.bind("<Escape>", to_second_admin)
+frame_a_3.bind("<<KpCancel>>", to_second_admin)
 frame_a_3.bind("<Key>", key_press_a_3)
+frame_a_3.bind("<<KpNum>>", key_press_a_3)
 
 frame_a_3_1 = tk.Frame(frame_a_3, bg='white')
 frame_a_3_1.place(relwidth=1, relheight=0.2)
@@ -5747,6 +5813,7 @@ frame_a_8_1 = tk.Frame(root, bg=color_back)
 
 # noinspection PyUnusedLocal
 def get_entry_a_8_1_1(event):
+    global subframe_num
     pin_entry = name_admin_pin.get()
     if len(pin_entry) != PIN_TEXT_LENGTH:
         name_admin_pin.set('')
@@ -5757,6 +5824,7 @@ def get_entry_a_8_1_1(event):
         name_admin_pin.set('')
         return
     entry_a_8_1_2.focus_set()
+    subframe_num = 12
 
 
 def clear_entry_a_8_1_1(event):
@@ -5766,7 +5834,14 @@ def clear_entry_a_8_1_1(event):
         entry_a_8_1_1.delete(0, tk.END)
 
 
+# noinspection PyUnusedLocal
+def insert_entry_a_8_1_1(event):
+    global num_pad_num_pressed
+    entry_a_8_1_1.insert(tk.END, num_pad_num_pressed)
+
+
 def get_entry_a_8_1_2(event):
+    global subframe_num
     pin_entry = name_admin_pin_confirm.get()
     if len(pin_entry) != PIN_TEXT_LENGTH:
         name_admin_pin_confirm.set('')
@@ -5783,17 +5858,26 @@ def get_entry_a_8_1_2(event):
         name_admin_pin.set('')
         name_admin_pin_confirm.set('')
         entry_a_8_1_1.focus_set()
+        subframe_num = 11
 
 
 # noinspection PyUnusedLocal
 def clear_entry_a_8_1_2(event):
+    global subframe_num
     if len(name_admin_pin_confirm.get()) == 0:
         name_admin_pass.set('')
         name_admin_pass_confirm.set('')
         entry_a_8_1_1.delete(0, tk.END)
         entry_a_8_1_1.focus_set()
+        subframe_num = 11
     else:
         entry_a_8_1_2.delete(0, tk.END)
+
+
+# noinspection PyUnusedLocal
+def insert_entry_a_8_1_2(event):
+    global num_pad_num_pressed
+    entry_a_8_1_2.insert(tk.END, num_pad_num_pressed)
 
 
 frame_a_8_1_1 = tk.Frame(frame_a_8_1, bg='white')
@@ -5814,8 +5898,12 @@ entry_a_8_1_1 = tk.Entry(frame_a_8_1_1,
                          bd=4,
                          bg="lightgrey")
 entry_a_8_1_1.bind("<Return>", get_entry_a_8_1_1)
+entry_a_8_1_1.bind("<<KpEnter>>", get_entry_a_8_1_1)
 entry_a_8_1_1.bind("<Escape>", clear_entry_a_8_1_1)
+entry_a_8_1_1.bind("<<KpCancel>>", clear_entry_a_8_1_1)
+entry_a_8_1_1.bind("<<KpNum>>", insert_entry_a_8_1_1)
 entry_a_8_1_1.place(relx=0.5, rely=0.35, anchor='center')
+
 
 label_a_8_1_2 = tk.Label(frame_a_8_1_1,
                          text="Enter your new PIN to confirm",
@@ -5832,7 +5920,10 @@ entry_a_8_1_2 = tk.Entry(frame_a_8_1_1,
                          bd=4,
                          bg="lightgrey")
 entry_a_8_1_2.bind("<Return>", get_entry_a_8_1_2)
+entry_a_8_1_2.bind("<<KpEnter>>", get_entry_a_8_1_2)
 entry_a_8_1_2.bind("<Escape>", clear_entry_a_8_1_2)
+entry_a_8_1_2.bind("<<KpCancel>>", clear_entry_a_8_1_2)
+entry_a_8_1_2.bind("<<KpNum>>", insert_entry_a_8_1_2)
 entry_a_8_1_2.place(relx=0.5, rely=0.75, anchor='center')
 
 frame_a_8_1_2 = tk.Frame(frame_a_8_1, bg=color_back)
@@ -5856,25 +5947,31 @@ label_a_8_1_2_2.place(relx=0.5, rely=0.7, anchor='center')
 
 # noinspection PyUnusedLocal
 def to_admin_eight_second(event):
+    global subframe_num
     frame_a_8_1.pack_forget()
     frame_a_8_2.pack(fill="both", expand=True)
     frame_a_8_2.focus_set()
+    subframe_num = 2
 
 
 # noinspection PyUnusedLocal
 def to_admin_eight_third(event):
+    global subframe_num
     frame_a_8_1.pack_forget()
     frame_a_8_2.pack_forget()
     name_admin_pass.set('')
     name_admin_pass_confirm.set('')
     frame_a_8_3.pack(fill="both", expand=True)
     entry_a_8_3_1.focus_set()
+    subframe_num = 31
 
 
 frame_a_8_2 = tk.Frame(root, bg=color_back)
 
 frame_a_8_2.bind("<Escape>", to_first_screen)
+frame_a_8_2.bind("<<KpEnter>>", to_first_screen)
 frame_a_8_2.bind("<Return>", to_admin_eight_third)
+frame_a_8_2.bind("<<KpCancel>>", to_admin_eight_third)
 
 frame_a_8_2_1 = tk.Frame(frame_a_8_2, bg='white')
 frame_a_8_2_1.place(relwidth=1, relheight=0.85)
@@ -5916,6 +6013,7 @@ frame_a_8_3 = tk.Frame(root, bg=color_back)
 
 # noinspection PyUnusedLocal
 def get_entry_a_8_3_1(event):
+    global subframe_num
     pass_entry = name_admin_pass.get()
     if len(pass_entry) != PASSWORD_TEXT_LENGTH:
         name_admin_pass.set('')
@@ -5926,6 +6024,7 @@ def get_entry_a_8_3_1(event):
         name_admin_pass.set('')
         return
     entry_a_8_3_2.focus_set()
+    subframe_num = 32
 
 
 def clear_entry_a_8_3_1(event):
@@ -5935,7 +6034,14 @@ def clear_entry_a_8_3_1(event):
         entry_a_8_3_1.delete(0, tk.END)
 
 
+# noinspection PyUnusedLocal
+def insert_entry_a_8_3_1(event):
+    global num_pad_num_pressed
+    entry_a_8_3_1.insert(tk.END, num_pad_num_pressed)
+
+
 def get_entry_a_8_3_2(event):
+    global subframe_num
     pass_entry = name_admin_pass_confirm.get()
     if len(pass_entry) != PASSWORD_TEXT_LENGTH:
         name_admin_pass_confirm.set('')
@@ -5952,16 +6058,25 @@ def get_entry_a_8_3_2(event):
         name_admin_pass.set('')
         name_admin_pass_confirm.set('')
         entry_a_8_3_1.focus_set()
+        subframe_num = 31
 
 
 # noinspection PyUnusedLocal
 def clear_entry_a_8_3_2(event):
+    global subframe_num
     if len(name_admin_pass_confirm.get()) == 0:
         name_admin_pass.set('')
         name_admin_pass_confirm.set('')
         entry_a_8_3_1.focus_set()
+        subframe_num = 31
     else:
         entry_a_8_3_2.delete(0, tk.END)
+
+
+# noinspection PyUnusedLocal
+def insert_entry_a_8_3_2(event):
+    global num_pad_num_pressed
+    entry_a_8_3_2.insert(tk.END, num_pad_num_pressed)
 
 
 frame_a_8_3_1 = tk.Frame(frame_a_8_3, bg='white')
@@ -5982,7 +6097,10 @@ entry_a_8_3_1 = tk.Entry(frame_a_8_3_1,
                          bd=4,
                          bg="lightgrey")
 entry_a_8_3_1.bind("<Return>", get_entry_a_8_3_1)
+entry_a_8_3_1.bind("<<KpEnter>>", get_entry_a_8_3_1)
 entry_a_8_3_1.bind("<Escape>", clear_entry_a_8_3_1)
+entry_a_8_3_1.bind("<<KpCancel>>", clear_entry_a_8_3_1)
+entry_a_8_3_1.bind("<<KpNum>>", insert_entry_a_8_3_1)
 entry_a_8_3_1.place(relx=0.5, rely=0.35, anchor='center')
 
 label_a_8_3_2 = tk.Label(frame_a_8_3_1,
@@ -6000,7 +6118,10 @@ entry_a_8_3_2 = tk.Entry(frame_a_8_3_1,
                          bd=4,
                          bg="lightgrey")
 entry_a_8_3_2.bind("<Return>", get_entry_a_8_3_2)
+entry_a_8_3_2.bind("<<KpEnter>>", get_entry_a_8_3_2)
 entry_a_8_3_2.bind("<Escape>", clear_entry_a_8_3_2)
+entry_a_8_3_2.bind("<<KpCancel>>", clear_entry_a_8_3_2)
+entry_a_8_3_2.bind("<<KpNum>>", insert_entry_a_8_3_2)
 entry_a_8_3_2.place(relx=0.5, rely=0.75, anchor='center')
 
 frame_a_8_3_2 = tk.Frame(frame_a_8_3, bg=color_back)
@@ -6024,9 +6145,11 @@ label_a_8_3_2_2.place(relx=0.5, rely=0.7, anchor='center')
 
 # noinspection PyUnusedLocal
 def to_admin_eight_fourth(event):
+    global subframe_num
     frame_a_8_3.pack_forget()
     frame_a_8_4.pack(fill="both", expand=True)
     frame_a_8_4.focus_set()
+    subframe_num = 4
 
 
 def key_press_a_84(event):
@@ -6037,10 +6160,10 @@ def key_press_a_84(event):
 frame_a_8_4 = tk.Frame(root, bg=color_back)
 
 frame_a_8_4.bind("<Key>", key_press_a_84)
+frame_a_8_4.bind("<<KpAnyKey>>", to_first_screen)
 
 frame_a_8_4_1 = tk.Frame(frame_a_8_4, bg='white')
 frame_a_8_4_1.place(relwidth=1, relheight=0.85)
-
 
 label_a_8_4_11 = tk.Label(frame_a_8_4_1,
                           text="Your Admin Password",
@@ -6067,6 +6190,9 @@ label_a_8_4_21.place(relx=0.5, rely=0.5, anchor='center')
 
 frame_a_11 = tk.Frame(root, bg=color_back)
 
+frame_a_11.bind("<Escape>", to_second_admin)
+frame_a_11.bind("<<KpCancel>>", to_second_admin)
+
 frame_a_11_1 = tk.Frame(frame_a_11, bg='white')
 frame_a_11_1.place(relwidth=1, relheight=0.15)
 
@@ -6084,23 +6210,33 @@ frame_a_11_2 = tk.Frame(frame_a_11, bg="white")
 frame_a_11_2.place(rely=0.15, relwidth=1, relheight=0.75)
 
 
-p_line_num = 4
+frame_a_11_line = list()
+b_nodes = list()
 y_step = 0.125
 x_step = 0.15
-frame_a_11_line = list()
+row_length = 5
 yy = 0
 xxx = 0.25
-p_num = ('02', '03', '33', '88')
-p_amp = (' 80', '100', '200', ' 50')
-p_nodes = (('Node# 02', 'Node# 03', 'Node# 05', 'Node# 12'),
-           ('Node# 07', 'Node# 09', 'Node# 10', 'Node# 13', 'Node# 17',
-            'Node# 21', 'Node# 29', 'Node# 30', 'Node# 33', 'Node# 37',
-            'Node# 42', 'Node# 43'),
-           ('Node# 31', 'Node# 35', "Node# 36"),
-           ('Node# 27', 'Node# 28', 'Node# 40', 'Node# 44', 'Node# 47',
-            'Node# 51', 'Node# 59', 'Node# 60', 'Node# 63'))
-b_nodes = list()
-row_length = 5
+if debug_screen_power_map:
+    p_line_num = 4
+    p_num = ('02', '03', '33', '88')
+    p_amp = (' 80', '100', '200', ' 50')
+    p_nodes = (('Node# 02', 'Node# 03', 'Node# 05', 'Node# 12'),
+               ('Node# 07', 'Node# 09', 'Node# 10', 'Node# 13', 'Node# 17',
+                'Node# 21', 'Node# 29', 'Node# 30', 'Node# 33', 'Node# 37',
+                'Node# 42', 'Node# 43'),
+               ('Node# 31', 'Node# 35', "Node# 36"),
+               ('Node# 27', 'Node# 28', 'Node# 40', 'Node# 44', 'Node# 47',
+                'Node# 51', 'Node# 59', 'Node# 60', 'Node# 63'))
+else:
+    p_line_num = 5
+    p_num = ('01', '02', '03', '04', '00+')
+    p_amp = ('   050', '   050', '   050', '   050', ' 100')
+    p_nodes = (('Node# 01',),
+               ("Node# 02",),
+               ("Node# 03",),
+               ("Node# 04",),
+               ("Node# 00", "Node# 05", "Node# 06", "Node# 07", "Node# 08"))
 
 for p_line in range(p_line_num):
     nodes_num = len(p_nodes[p_line])
@@ -6120,7 +6256,7 @@ for p_line in range(p_line_num):
         if node_rows_num < rows_num - 1:
             row_length_current = row_length
         else:
-            row_length_current = nodes_num % row_length
+            row_length_current = (nodes_num - 1) % row_length + 1
         for f_nodes in range(row_length_current):
             node_num = node_rows_num * row_length + f_nodes
             b_nodes[p_line].append(tk.Button(frame_a_11_line[p_line],
@@ -6134,8 +6270,7 @@ frame_a_11_3 = tk.Frame(frame_a_11, bg=color_back)
 frame_a_11_3.place(rely=0.9, relwidth=1, relheight=0.1)
 
 label_a_11_3 = tk.Label(frame_a_11_3,
-                        text="Cancel to return to Administration"
-                             " and Setup Menu",
+                        text="Cancel to return to Administration and Setup Menu",
                         font=font_6,
                         bg=color_back,
                         fg='white')
@@ -6168,6 +6303,7 @@ root.bind("<Shift-F12>", admin_pass_show_or_hide)
 root.bind("<Alt-F5>", terminal_on_off)
 # root.bind("<Shift-F12>", terminal_header_on_off)
 root.bind("<Alt-F6>", terminal_header_on_off)
+root.bind("<Alt-F12>", debug_screen_power_map_on_off)
 
 # Alt-Shift Hot-Keys for CAN-Bus Control
 # root.bind("<Shift-F5>", poll_on_off)
@@ -6193,6 +6329,7 @@ root.bind("<Control-Shift-C>", force_charging_enabled_on_off)
 # root.bind("<Shift-F10>", system_restart)
 
 frame_num = 0
+subframe_num = 0
 debug_mode = get_debug_mode()
 key_pad = KeyPad()
 power_lines = PowerLines()
