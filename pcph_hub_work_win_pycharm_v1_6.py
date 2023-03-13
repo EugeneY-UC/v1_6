@@ -175,6 +175,20 @@ class KeyPad:
         if frame_num == 4:
             if self.__key_code == 0x07:
                 frame_4.event_generate('<<KpCancel>>', when='tail')
+        if frame_num == 101:
+            if self.__key_code == 0x07:
+                entry_a_1.event_generate('<<KpCancel>>', when='tail')
+            if self.__key_code == 0x17:
+                entry_a_1.event_generate('<<KpEnter>>', when='tail')
+            if num_pad_num_pressed != '':
+                entry_a_1.event_generate('<<KpNum>>', when='tail')
+        if frame_num == 102:
+            if self.__key_code == 0x07:
+                frame_a_2.event_generate('<<KpCancel>>', when='tail')
+            if self.__key_code == 0x17:
+                frame_a_2.event_generate('<<KpEnter>>', when='tail')
+            if num_pad_num_pressed != '':
+                frame_a_2.event_generate('<<KpNum>>', when='tail')
 
 
 class PowerLine:
@@ -3213,6 +3227,19 @@ def get_entry_a_1(event):
     to_second_admin(event)
 
 
+def clear_entry_a_1(event):
+    if len(name_pass.get()) == 0:
+        to_zero_screen(event)
+    else:
+        entry_a_1.delete(0, tk.END)
+
+
+# noinspection PyUnusedLocal
+def insert_entry_a_1(event):
+    global num_pad_num_pressed
+    entry_a_1.insert(tk.END, num_pad_num_pressed)
+
+
 entry_a_1 = tk.Entry(frame_a_1,
                      textvariable=name_pass,
                      font=font_a_1_2,
@@ -3220,28 +3247,35 @@ entry_a_1 = tk.Entry(frame_a_1,
                      width=PASSWORD_TEXT_LENGTH,
                      bg=color_entry_back)
 entry_a_1.bind("<Return>", get_entry_a_1)
-entry_a_1.bind("<Escape>", to_zero_screen)
+entry_a_1.bind("<<KpEnter>>", get_entry_a_1)
+entry_a_1.bind("<Escape>", clear_entry_a_1)
+entry_a_1.bind("<<KpCancel>>", clear_entry_a_1)
+entry_a_1.bind("<<KpNum>>", insert_entry_a_1)
 entry_a_1.place(relx=0.5, rely=0.5, anchor='center')
 entry_a_1.focus_set()
 
 
 def key_press_a_2(event):
-    if event.keysym == '1':
+    global num_pad_num_pressed
+    if event.keysym == '1' or num_pad_num_pressed == '1':
         to_third_admin(event)
-    elif event.keysym == '2':
+    elif event.keysym == '2' or num_pad_num_pressed == '2':
         to_third_admin(event)
-    elif event.keysym == '3':
+    elif event.keysym == '3' or num_pad_num_pressed == '3':
         pass
-    elif event.keysym == '4':
+    elif event.keysym == '4' or num_pad_num_pressed == '4':
         pass
-    elif event.keysym == '5':
+    elif event.keysym == '5' or num_pad_num_pressed == '5':
         to_eight_admin(event)
 
 
 frame_a_2 = tk.Frame(root, bg=color_back)
 
 frame_a_2.bind("<Escape>", to_zero_screen)
+frame_a_2.bind("<<KpCancel>>", to_zero_screen)
 frame_a_2.bind("<Key>", key_press_a_2)
+frame_a_2.bind("<<KpNum>>", key_press_a_2)
+
 
 frame_a_2_1 = tk.Frame(frame_a_2, bg='white')
 frame_a_2_1.place(relwidth=1, relheight=0.2)
@@ -3263,9 +3297,9 @@ pl_x1 = [0.18, 0.58]
 pl_y1 = [0.2, 0.45, 0.7]
 pl_x2 = [0.2, 0.6]
 pl_y2 = [0.2, 0.45, 0.7]
-tl = ["Infrastructure\nsetup",
-      "Check setup",
-      "Error log",
+tl = ["Infrastructure\nSetup",
+      "Check Setup",
+      "Check Log",
       "Ping Node #",
       "Admin PIN &\nPassword change",
       '']
