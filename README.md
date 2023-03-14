@@ -75,9 +75,21 @@ v1_5 - Version for Trial with Keypad
 	   + Self-testing CAN-Bus command added to the Hard Reset sequence
 	   + Unexpected Node Disable event added - to srtart Soft Reset sequence
 v1_6 - Version for Trial with basic functionality
-	   + to correct source warnings after switching to new version of PyCharm
+	   + eliminated compiler warnings after switching to new version of PyCharm
 	   + to correct CAN-bus initialization warning (added the "down" command)
 	   + to switch from "ifconfig" to "ip link set" for CAN config commands
 	   + to change hot-keys for Full-Screen mode and Windowed to "Shift-Left/Right"
 	   + to add screen upside-down and normal hot-key "Shift Down/Up"
 	   + to hide mouse coursor in Full-Screen mode
+	   + to add Grizzly Logo to Welcome (first) screen
+	   + to inhibit command - CAN1 'down'. if CAN1 is not configured
+	   + to eliminate the third screen to confirm the selection of Charger##
+	   + to redesign the second screen - blue background, big number, new bottom text, price
+	   + add test_schedule.csv to define energy price
+	   + add energy price to top left part of fourth screen
+           + add service command to display / hide current energy price
+	   + to activate and show service commands notification on first three screens
+	   + to add service mode and key to "hide/show" customer pin and admin password +
+	   + activate keypad for the first three admin screens
+	   + to display "Grizzly" Logo in the background of the second screen (and the fourth?)
+	   + full log out to cvs file

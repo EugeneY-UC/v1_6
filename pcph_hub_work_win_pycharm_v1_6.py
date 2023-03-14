@@ -74,12 +74,13 @@ show_admin_pass_entered = False                 # Shift-F12
 terminal_output = True                          # Alt-F5
 terminal_header = True                          # Alt-F6
 
+debug_screen_power_map = False                  # Alt-F12
+
 poll_active = True                              # Alt-Shift-C
 can1_configured = False
 
 node_reset_when_can_reconnected = False         # Control-F5
 node_reset_when_node_get_disabled = True        # Control-F6
-debug_screen_power_map = False                  # Control-F11
 node_reset_when_user_unplug_cable = False       # Control-F12
 
 force_charging_enabled = False                  # Ctrl-Shift-C
@@ -2676,9 +2677,11 @@ def debug_screen_power_map_on_off(event):
     global debug_screen_power_map
     if debug_screen_power_map:
         debug_screen_power_map = False
+        power_line_map.redraw()
         show_service_key_message("HIDE DEBUG Power Map")
     else:
         debug_screen_power_map = True
+        power_line_map.redraw()
         show_service_key_message("SHOW DEBUG Power Map")
 
 
@@ -6209,63 +6212,6 @@ separator_a_11_1.place(rely=0.975, relwidth=1, height=3)
 frame_a_11_2 = tk.Frame(frame_a_11, bg="white")
 frame_a_11_2.place(rely=0.15, relwidth=1, relheight=0.75)
 
-
-frame_a_11_line = list()
-b_nodes = list()
-y_step = 0.125
-x_step = 0.15
-row_length = 5
-yy = 0
-xxx = 0.25
-if debug_screen_power_map:
-    p_line_num = 4
-    p_num = ('02', '03', '33', '88')
-    p_amp = (' 80', '100', '200', ' 50')
-    p_nodes = (('Node# 02', 'Node# 03', 'Node# 05', 'Node# 12'),
-               ('Node# 07', 'Node# 09', 'Node# 10', 'Node# 13', 'Node# 17',
-                'Node# 21', 'Node# 29', 'Node# 30', 'Node# 33', 'Node# 37',
-                'Node# 42', 'Node# 43'),
-               ('Node# 31', 'Node# 35', "Node# 36"),
-               ('Node# 27', 'Node# 28', 'Node# 40', 'Node# 44', 'Node# 47',
-                'Node# 51', 'Node# 59', 'Node# 60', 'Node# 63'))
-else:
-    p_line_num = 5
-    p_num = ('01', '02', '03', '04', '00+')
-    p_amp = ('   050', '   050', '   050', '   050', ' 100')
-    p_nodes = (('Node# 01',),
-               ("Node# 02",),
-               ("Node# 03",),
-               ("Node# 04",),
-               ("Node# 00", "Node# 05", "Node# 06", "Node# 07", "Node# 08"))
-
-for p_line in range(p_line_num):
-    nodes_num = len(p_nodes[p_line])
-    rows_num = (nodes_num - 1) // row_length + 1
-    frame_a_11_line.append(tk.Frame(frame_a_11_2, borderwidth=4, relief=tk.RIDGE))
-    frame_a_11_line[p_line].place(relx=0, rely=yy,
-                                  relwidth=1, relheight=y_step * rows_num,
-                                  anchor='nw')
-    button_probe = tk.Button(frame_a_11_line[p_line],
-                             text="Line#" + p_num[p_line] + " (" + p_amp[p_line] + 'A)',
-                             font=font_14_bold)
-    button_probe.place(relx=0.01, rely=0.5, anchor='w')
-    b_nodes.append(list())
-
-    for node_rows_num in range(rows_num):
-        xx = xxx
-        if node_rows_num < rows_num - 1:
-            row_length_current = row_length
-        else:
-            row_length_current = (nodes_num - 1) % row_length + 1
-        for f_nodes in range(row_length_current):
-            node_num = node_rows_num * row_length + f_nodes
-            b_nodes[p_line].append(tk.Button(frame_a_11_line[p_line],
-                                             text=p_nodes[p_line][node_num],
-                                             font=font_14_bold))
-            b_nodes[p_line][node_num].place(relx=xx, rely=(node_rows_num + 0.5) / rows_num, anchor='w')
-            xx += x_step
-        yy += y_step
-
 frame_a_11_3 = tk.Frame(frame_a_11, bg=color_back)
 frame_a_11_3.place(rely=0.9, relwidth=1, relheight=0.1)
 
@@ -6276,6 +6222,98 @@ label_a_11_3 = tk.Label(frame_a_11_3,
                         fg='white')
 label_a_11_3.place(relx=0.5, rely=0.5, anchor='center')
 
+
+class PowerLineMap:
+
+    def __init__(self):
+        self.__line_num = 0
+        self.__num = list()
+        self.__amp = list()
+        self.__nodes = list([])
+        self.__button_lines = list()
+        self.__button_nodes = list([])
+
+        self.__row_size = 5
+        self.__frame_a_11_line = list()
+
+        self.redraw()
+
+    def reset(self):
+        if debug_screen_power_map:
+            self.__line_num = 4
+            self.__num = ('02', '03', '33', '88')
+            self.__amp = (' 80', '200', '100', ' 50')
+            self.__nodes = (('Node# 02', 'Node# 03', 'Node# 05', 'Node# 12'),
+                            ('Node# 07', 'Node# 09', 'Node# 10', 'Node# 13', 'Node# 17',
+                             'Node# 21', 'Node# 29', 'Node# 30', 'Node# 33', 'Node# 37',
+                             'Node# 42', 'Node# 43'),
+                            ('Node# 31', 'Node# 35', "Node# 36"),
+                            ('Node# 27', 'Node# 28', 'Node# 40', 'Node# 44', 'Node# 47',
+                             'Node# 51', 'Node# 59', 'Node# 60', 'Node# 63'))
+        else:
+            self.__line_num = 5
+            self.__num = ('01', '02', '03', '04', '05')
+            self.__amp = ('   50', '   50', '   50', '   50', ' 100')
+            self.__nodes = (('Node# 01',),
+                            ("Node# 02",),
+                            ("Node# 03",),
+                            ("Node# 04",),
+                            ("Node# 00", "Node# 05", "Node# 06", "Node# 07", "Node# 08"))
+
+    def draw(self):
+
+        draw_y_step = 0.125
+        draw_x_step = 0.15
+        draw_yy = 0
+        draw_xxx = 0.25
+
+        for draw_p_line in range(self.__line_num):
+            draw_nodes_num = len(self.__nodes[draw_p_line])
+            draw_rows_num = (draw_nodes_num - 1) // self.__row_size + 1
+            self.__frame_a_11_line.append(tk.Frame(frame_a_11_2, borderwidth=4, relief=tk.RIDGE))
+            self.__frame_a_11_line[draw_p_line].place(relx=0,
+                                                      rely=draw_yy,
+                                                      relwidth=1,
+                                                      relheight=draw_y_step * draw_rows_num,
+                                                      anchor='nw')
+            self.__button_lines.append(tk.Button(self.__frame_a_11_line[draw_p_line],
+                                                 text="Line#" + self.__num[draw_p_line]
+                                                      + " (" + self.__amp[draw_p_line] + 'A)',
+                                                 font=font_14_bold))
+            self.__button_lines[draw_p_line].place(relx=0.01, rely=0.5, anchor='w')
+            self.__button_nodes.append(list())
+
+            for draw_n_row in range(draw_rows_num):
+                draw_xx = draw_xxx
+                if draw_n_row < draw_rows_num - 1:
+                    draw_row_length_current = self.__row_size
+                else:
+                    draw_row_length_current = (draw_nodes_num - 1) % self.__row_size + 1
+                for draw_f_nodes in range(draw_row_length_current):
+                    draw_node_num = draw_n_row * self.__row_size + draw_f_nodes
+                    self.__button_nodes[draw_p_line].append(tk.Button(self.__frame_a_11_line[draw_p_line],
+                                                                      text=self.__nodes[draw_p_line][draw_node_num],
+                                                                      font=font_14_bold))
+                    self.__button_nodes[draw_p_line][draw_node_num].place(relx=draw_xx,
+                                                                          rely=(draw_n_row + 0.5) / draw_rows_num,
+                                                                          anchor='w')
+                    draw_xx += draw_x_step
+                draw_yy += draw_y_step
+
+    def redraw(self):
+        for erase_p_line in reversed(range(len(self.__button_lines))):
+            self.__frame_a_11_line[erase_p_line].place_forget()
+            self.__frame_a_11_line.pop()
+            self.__button_lines[erase_p_line].place_forget()
+            self.__button_lines.pop()
+            for erase_n_row in reversed(range(len(self.__button_nodes[erase_p_line]))):
+                self.__button_nodes[erase_p_line][erase_n_row].place_forget()
+                self.__button_nodes[erase_p_line].pop()
+        self.reset()
+        self.draw()
+
+
+power_line_map = PowerLineMap()
 
 # Hot-Keys for The Application Appearance
 root.bind("<Shift-Left>", to_full_screen)
