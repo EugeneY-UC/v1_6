@@ -1,0 +1,35 @@
+ID,Line Name,Max AMP,Active,Record Status
+1,West Tower West_Tower_West_Tower,200,ON,ON
+2,South Tower,100,OFF,ON
+3,East Tower,50,ON,ON
+4,Deleted   ,100,ON,OFF
+5,West Tower West_Tower_West_Tower,200,ON,ON
+6,South Tower,100,OFF,ON
+7,East Tower,50,ON,ON
+8,West Tower West_Tower_West_Tower,200,ON,ON
+9,South Tower,100,OFF,ON
+10,East Tower,50,ON,ON
+11,West Tower West_Tower_West_Tower,200,ON,ON
+12,South Tower,100,OFF,ON
+13,Deleted   ,50,ON,OFF
+14,West Tower West_Tower_West_Tower,200,ON,ON
+15,South Tower,100,OFF,ON
+16,East Tower,50,ON,ON
+17,West Tower West_Tower_West_Tower,200,ON,ON
+18,South Tower,100,OFF,ON
+19,East Tower,50,ON,ON
+20,West Tower West_Tower_West_Tower,200,ON,ON
+21,South Tower,100,OFF,ON
+22,East Tower,50,ON,ON
+23,West Tower West_Tower_West_Tower,200,ON,ON
+24,South Tower,100,OFF,ON
+25,East Tower,50,ON,ON
+26,West Tower West_Tower_West_Tower,200,ON,ON
+27,South Tower,100,OFF,ON
+28,East Tower,50,ON,ON
+29,West Tower West_Tower_West_Tower,200,ON,ON
+30,South Tower,100,OFF,ON
+31,East Tower,50,ON,ON
+32,West Tower West_Tower_West_Tower,200,ON,ON
+33,South Tower,100,OFF,ON
+34,East Tower,50,ON,OFF

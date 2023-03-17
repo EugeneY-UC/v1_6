@@ -1,0 +1,19 @@
+ID,Charger Node Name,Charger Node Address,Charger Node Type,Charger Node Status,Power Line,Record Status
+1,12,"100 Noname St, Toronto, A0A 0A0",PUBLIC,ACTIVE,2,ON
+2,23,"55 Home Rd Toronto, L3R 0A1",PRIVATE,ACTIVE,2,ON
+3,24,"55 Home Rd Toronto, L3R 0A1",PUBLIC,OFF,2,ON
+4,14,"12 Home Rd,Toronto, L3R 0A0",PRIVATE,ACTIVE,3,OFF
+5,15,"100 Noname St, Toronto, A0A 0A0",MIXED,ACTIVE,3,ON
+6,212,"12 Home Rd,Toronto, L3R 0A0",PRIVATE,REPAIR,1,ON
+7,25,"100 Noname St, Toronto, A0A 0A0",PRIVATE,ACTIVE,2,ON
+8,15,"12 Home Rd,Toronto, L3R 0A0",MIXED,ACTIVE,3,OFF
+9,212,"12 Home Rd,Toronto, L3R 0A0",PRIVATE,REPAIR,1,ON
+7,25,"100 Noname St, Toronto, A0A 0A0",PRIVATE,ACTIVE,2,ON
+8,15,"100 Noname St, Toronto, A0A 0A0",MIXED,ACTIVE,3,OFF
+9,212,"100 Noname St, Toronto, A0A 0A0",PRIVATE,REPAIR,1,ON
+10,25,"100 Noname St, Toronto, A0A 0A0",PRIVATE,ACTIVE,2,ON
+11,15,"12 Home Rd,Toronto, L3R 0A0",MIXED,ACTIVE,3,ON
+12,212,"12 Home Rd,Toronto, L3R 0A0",PRIVATE,REPAIR,1,OFF
+13,12345678,"55 Home Rd Toronto, L3R 0A1",PRIVATE,ACTIVE,2,ON
+14,15,"100 Noname St, Toronto, A0A 0A0",MIXED,ACTIVE,3,ON
+15,212,"12 Home Rd,Toronto, L3R 0A0",PRIVATE,REPAIR,1,ON
