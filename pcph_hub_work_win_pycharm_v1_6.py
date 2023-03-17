@@ -19,6 +19,8 @@ from PIL import ImageTk, Image
 
 CSV_FOLDER = Path('CSV')
 PNG_FOLDER = Path('PNG')
+LOG_FOLDER = Path('LOG')
+
 # png_welcome_frame = PNG_FOLDER / 'welcome_frame.png'
 png_welcome_frame = PNG_FOLDER / 'welcome_frame_stub.png'
 png_logo_small = PNG_FOLDER / 'logo-transparent-small.png'
@@ -64,15 +66,18 @@ show_node_status_in_admin_mode = False          # Shift-F3
 time_label_active = True                        # Shift-F5
 hundreds_label_active = False                   # Shift-F6
 
-show_rate_fourth_screen = True                  # Shift-F7
-show_kwh_fourth_screen = False                  # Shift-F8
-show_rate_second_screen = True                  # Shift-F9
+# reserved for show_amp_watt_time               # Shift-F7
+show_rate_second_screen = True                  # Shift-F8
+show_rate_fourth_screen = True                  # Shift-F9
+show_kwh_fourth_screen = False                  # Shift-F10
 
 show_pin_entered = False                        # Shift-F11
 show_admin_pass_entered = False                 # Shift-F12
 
 terminal_output = True                          # Alt-F5
 terminal_header = True                          # Alt-F6
+
+full_logout_on = True                           # Alt-F9
 
 debug_screen_power_map = False                  # Alt-F12
 
@@ -91,6 +96,7 @@ node_num = -1
 # admin_node_num = -1
 # admin_power_line_num = 0
 
+# nodes_supported = range(12)
 nodes_supported = range(9)
 nodes_debugged = 0, 5, 6, 7
 NODE_DISPLAYED_IN_DEBUG = 0
@@ -195,44 +201,47 @@ class KeyPad:
             if num_pad_num_pressed != '':
                 frame_a_3.event_generate('<<KpNum>>', when='tail')
         if frame_num == 108:
-            if subframe_num == 11:
+            if sub_frame_num == 11:
                 if self.__key_code == 0x07:
                     entry_a_8_1_1.event_generate('<<KpCancel>>', when='tail')
                 if self.__key_code == 0x17:
                     entry_a_8_1_1.event_generate('<<KpEnter>>', when='tail')
                 if num_pad_num_pressed != '':
                     entry_a_8_1_1.event_generate('<<KpNum>>', when='tail')
-            if subframe_num == 12:
+            if sub_frame_num == 12:
                 if self.__key_code == 0x07:
                     entry_a_8_1_2.event_generate('<<KpCancel>>', when='tail')
                 if self.__key_code == 0x17:
                     entry_a_8_1_2.event_generate('<<KpEnter>>', when='tail')
                 if num_pad_num_pressed != '':
                     entry_a_8_1_2.event_generate('<<KpNum>>', when='tail')
-            if subframe_num == 2:
+            if sub_frame_num == 2:
                 if self.__key_code == 0x07:
                     frame_a_8_2.event_generate('<<KpCancel>>', when='tail')
                 if self.__key_code == 0x17:
                     frame_a_8_2.event_generate('<<KpEnter>>', when='tail')
-            if subframe_num == 31:
+            if sub_frame_num == 31:
                 if self.__key_code == 0x07:
                     entry_a_8_3_1.event_generate('<<KpCancel>>', when='tail')
                 if self.__key_code == 0x17:
                     entry_a_8_3_1.event_generate('<<KpEnter>>', when='tail')
                 if num_pad_num_pressed != '':
                     entry_a_8_3_1.event_generate('<<KpNum>>', when='tail')
-            if subframe_num == 32:
+            if sub_frame_num == 32:
                 if self.__key_code == 0x07:
                     entry_a_8_3_2.event_generate('<<KpCancel>>', when='tail')
                 if self.__key_code == 0x17:
                     entry_a_8_3_2.event_generate('<<KpEnter>>', when='tail')
                 if num_pad_num_pressed != '':
                     entry_a_8_3_2.event_generate('<<KpNum>>', when='tail')
-            if subframe_num == 4:
+            if sub_frame_num == 4:
                 frame_a_8_4.event_generate('<<KpAnyKey>>', when='tail')
         if frame_num == 111:
             if self.__key_code == 0x07:
                 frame_a_11.event_generate('<<KpCancel>>', when='tail')
+        if frame_num == 112:
+            if self.__key_code == 0x07:
+                frame_a_12.event_generate('<<KpCancel>>', when='tail')
 
 
 class PowerLine:
@@ -655,8 +664,16 @@ class NodeCan:
         self.__current_set_response = 0x00
         self.__current_measured_high = 0x00
         self.__current_measured_low = 0x00
-        self.__voltage_measured_high = 0x00
-        self.__voltage_measured_low = 0x00
+        self.__power_measured_high = 0x00
+        self.__power_measured_low = 0x00
+
+        self.__charge_session_active = False
+        self.__charge_session_time_start = None
+        self.__charge_session_last_time_point = None
+        self.__charge_session_last_step_delta = None
+        self.__charge_session_time_elapsed = None
+        self.__charge_session_kwh = 0
+        self.__charge_session_cost_cents = 0
 
     def get_static_node(self):
         return self.__node
@@ -757,17 +774,82 @@ class NodeCan:
     def set_current_measured_low(self, cur_low_byte):
         self.__current_measured_low = cur_low_byte
 
-    def get_voltage_measured_high(self):
-        return self.__voltage_measured_high
+    def get_power_measured_high(self):
+        return self.__power_measured_high
 
-    def get_voltage_measured_low(self):
-        return self.__voltage_measured_low
+    def get_power_measured_low(self):
+        return self.__power_measured_low
 
-    def set_voltage_measured_high(self, vlt_high_byte):
-        self.__voltage_measured_high = vlt_high_byte
+    def set_power_measured_high(self, power_high_byte):
+        self.__power_measured_high = power_high_byte
 
-    def set_voltage_measured_low(self, vlt_low_byte):
-        self.__voltage_measured_low = vlt_low_byte
+    def set_power_measured_low(self, power_low_byte):
+        self.__power_measured_low = power_low_byte
+
+    def get_charge_session_active_status(self):
+        return self.__charge_session_active
+
+    def get_charge_session_start_time(self):
+        return self.__charge_session_time_start
+
+    def get_charge_session_last_time_point(self):
+        return self.__charge_session_last_time_point
+
+    def get_charge_session_last_step_delta(self):
+        return self.__charge_session_last_step_delta
+
+    def get_charge_session_elapsed_time(self):
+        return self.__charge_session_time_elapsed
+
+    def get_charge_session_kwh(self):
+        return self.__charge_session_kwh
+
+    def get_charge_session_cost_cents(self):
+        return self.__charge_session_cost_cents
+
+    def start_charge_session(self):
+        time_now = datetime.now()
+        self.__charge_session_time_start = time_now
+        self.__charge_session_last_time_point = time_now
+        self.__charge_session_last_step_delta = timedelta(0)
+        self.__charge_session_time_elapsed = timedelta(0)
+        self.__charge_session_active = True
+        self.__charge_session_kwh = 0
+        self.__charge_session_cost_cents = 0
+        
+    def stop_charge_session(self):
+        self.__charge_session_active = False
+
+    def update_charge_session(self):
+        time_now = datetime.now()
+        # last_step_delta = timedelta(time_now - self.__charge_session_last_time_point)
+        # time_elapsed = timedelta(time_now - self.__charge_session_time_start)
+        if self.__charge_session_last_time_point is not None:
+            last_step_delta = time_now - self.__charge_session_last_time_point
+            time_portion_sec = last_step_delta.total_seconds()
+        else:
+            last_step_delta = timedelta(0)
+            time_portion_sec = 0
+        if self.__charge_session_time_start is not None:
+            time_elapsed = time_now - self.__charge_session_time_start
+        else:
+            time_elapsed = timedelta(0)
+
+        power_high = self.__power_measured_high
+        power_low = self.__power_measured_low
+        power_value_watt = power_high * 0x100 + power_low
+        power_portion_watt = power_value_watt * time_portion_sec / 3600
+        new_power = self.__charge_session_kwh + power_portion_watt / 1000
+
+        price_cent = daily_prices.get_current_price() / 1000
+        cost_portion_cent = new_power * price_cent
+        new_cost = self.__charge_session_cost_cents + cost_portion_cent
+
+        self.__charge_session_last_time_point = time_now
+        self.__charge_session_last_step_delta = last_step_delta
+        self.__charge_session_time_elapsed = time_elapsed
+        self.__charge_session_kwh = new_power
+        self.__charge_session_cost_cents = new_cost
 
 
 class NodesCan:
@@ -791,6 +873,7 @@ class NodesCan:
         self.__flag_reset_per_cycle_active = True
 
         self.__node_num_user_selected = -1
+        self.__display_mode_amp_watt_time_cost = 0
 
         self.__message_1_to_display = ''
         self.__message_1_displayed = ''
@@ -876,6 +959,15 @@ class NodesCan:
             self.__restart_mode = 0
         else:
             self.__restart_mode += 1
+
+    def get_display_mode_amp_watt_time_cost(self):
+        return self.__display_mode_amp_watt_time_cost
+
+    def increment_display_mode_amp_watt_time_cost(self):
+        if self.__display_mode_amp_watt_time_cost == 4:
+            self.__display_mode_amp_watt_time_cost = 0
+        else:
+            self.__display_mode_amp_watt_time_cost += 1
 
     def populate_nodes_com(self):
         nodes_active = list()
@@ -1012,6 +1104,8 @@ class NodesCan:
         key_code = key_pad.get_key_code()
         key_name = key_pad.get_key_name()
         key_name_quoted = '\'' + key_name + '\''
+        terminal_text\
+            = "KeyPad Event ->   Key Pressed = " + key_name_quoted + "   ( Key Hex Code = " + hex(key_code) + ')'
         if terminal_header:
             print()
             print()
@@ -1032,8 +1126,11 @@ class NodesCan:
             # print('|||', '-' * 109, '|||')
             print('|||', '-' * 109, '|||\n')
         else:
-            print("KeyPad Event ->   Key Pressed = ", key_name_quoted,
-                  "   ( Key Hex Code = ", hex(key_code), ')'),
+            # print("KeyPad Event ->   Key Pressed = ", key_name_quoted,
+            #       "   ( Key Hex Code = ", hex(key_code), ')'),
+            print(terminal_text)
+        if full_logout_on:
+            logout.full_log(terminal_text)
 
     def print_terminal_header(self):
         print('\n\n\n==================================', end=' ')
@@ -1043,6 +1140,11 @@ class NodesCan:
             print("  CAN Working Cycle  ", end='')
         print('-', self.__time_stamp.strftime("%Y-%m-%d %H:%M:%S.%f")[:-4], end=' ')
         print('====================================\n')
+        if full_logout_on:
+            if self.__restart_state:
+                logout.full_log(f"===CAN Init Cycle # {self.__restart_cycles_count:03}")
+            else:
+                logout.full_log("===" + self.__time_stamp.strftime("%Y-%m-%d %H:%M:%S.%f")[:-4])
 
     def poll_node(self, msg_out):
         if self.__node_bank_count == 0:
@@ -1054,8 +1156,12 @@ class NodesCan:
         if terminal_output:
             if msg_in is None:
                 print("Timeout, no Message")
+                if terminal_output:
+                    logout.full_log("---")
             else:
                 print(msg_in)
+                if terminal_output:
+                    logout.full_log(str(msg_in))
         return msg_in
 
     def message_prepare_to_display(self, msg):
@@ -1092,6 +1198,35 @@ class NodesCan:
                 message_sub_state = len(DISPLAY_STATUS_2) - 1
                 error_msg = 0
                 amp_value = 0.0
+                # amp_value_high = self.__current_node_active.get_current_measured_high()
+                # amp_value_low = self.__current_node_active.get_current_measured_low()
+                # amp_value = (amp_value_high * 0x100 + amp_value_low) / 100
+                power_value_high = self.__current_node_active.get_power_measured_high()
+                power_value_low = self.__current_node_active.get_power_measured_low()
+                power_value = (power_value_high * 0x100 + power_value_low) / 1000
+                session_time_to_show = self.__current_node_active.get_charge_session_elapsed_time()
+                if session_time_to_show is not None:
+                    sec = int(session_time_to_show.total_seconds())
+                    kwh_to_show = self.__current_node_active.get_charge_session_kwh()
+                    # cents_to_show = self.__current_node_active.get_charge_session_cost_cents()
+                    cents_to_show = kwh_to_show * daily_prices.get_current_price() / 10
+                else:
+                    sec = 0
+                    kwh_to_show = 0
+                    cents_to_show = 0
+                session_time_text = "{:02}:{:02}:{:02}".format(sec // 3600, sec % 3600 // 60, sec % 60)
+                # kwh_text = str(kwh_to_show)
+                kwh_text = "{:7.3f}".format(kwh_to_show)
+                # cents_text = str(cents_to_show)
+                cents_text = "${:8.4f}".format(cents_to_show / 10_000)
+                if full_logout_on:
+                    logout.charge_log(session_time_text + " , "
+                                      + "Amp = {:6.2f}".format(amp_value) + " , "
+                                      + "kW = {:6.3f}".format(power_value) + " , "
+                                      + "Time = " + session_time_text + " , "
+                                      + "kWh = " + kwh_text + " , "
+                                      + "Cost = " + cents_text
+                                      )
                 if len(msg.data) > 0:
                     if msg.data[0] < message_state:
                         message_state = msg.data[0]
@@ -1215,7 +1350,17 @@ class NodesCan:
                             self.__message_1_font = font_5
                             self.__message_1_color = color_message_green
                             self.__message_1_blinking = False       # True
-                            self.__message_2_to_display = "Amp = {:6.2f}".format(amp_value)
+                            mode_amp_watt = nodes_can.get_display_mode_amp_watt_time_cost()
+                            if mode_amp_watt == 0:
+                                self.__message_2_to_display = "Amp = {:6.2f}".format(amp_value)
+                            elif mode_amp_watt == 1:
+                                self.__message_2_to_display = "kW = {:6.3f}".format(power_value)
+                            elif mode_amp_watt == 2:
+                                self.__message_2_to_display = "Time = " + session_time_text
+                            elif mode_amp_watt == 3:
+                                self.__message_2_to_display = "kWh = " + kwh_text
+                            else:
+                                self.__message_2_to_display = "Cost = " + cents_text
                             self.__message_2_font = font_4
                             self.__message_2_color = color_message_white
                             self.__message_2_blinking = False
@@ -1317,6 +1462,11 @@ class NodesCan:
             if len(msg.data) > 5:
                 cur_measured_high = msg.data[5]
                 cur_measured_low = msg.data[4]
+            power_measured_high = 0
+            power_measured_low = 0
+            if len(msg.data) > 7:
+                power_measured_high = msg.data[7]
+                power_measured_low = msg.data[6]
             if self.__current_node_active is not None:
                 old_state = self.__current_node_active.get_state_response()
                 self.__current_node_active.set_state_response(state)
@@ -1347,8 +1497,24 @@ class NodesCan:
                     if current_node_resetting and self.__flag_reset_per_cycle_active:
                         self.reset_current_node()
                         self.__flag_reset_per_cycle_active = False
+                charging_session_started =\
+                    (old_state != 0x04) and (old_state != 0x05)\
+                    and ((state == 0x04) or (state == 0x05))
+                if charging_session_started:
+                    self.__current_node_active.start_charge_session()
+                else:
+                    charging_session_finished =\
+                        ((old_state == 0x04) or (old_state == 0x05))\
+                        and (state != 0x04) and (state != 0x05)
+                    if charging_session_finished:
+                        self.__current_node_active.stop_charge_session()
+                    charging_session_ongoing = self.__current_node_active.get_charge_session_active_status()
+                    if charging_session_ongoing:
+                        self.__current_node_active.update_charge_session()
                 self.__current_node_active.set_current_measured_high(cur_measured_high)
                 self.__current_node_active.set_current_measured_low(cur_measured_low)
+                self.__current_node_active.set_power_measured_high(power_measured_high)
+                self.__current_node_active.set_power_measured_low(power_measured_low)
         if self.__current_node_active is not None:
             msg_old_ok = self.__current_node_active.get_node_connected()
             self.__current_node_active.set_node_connected(msg_received_ok)
@@ -2112,6 +2278,15 @@ def hide_service_key_message():
 
 
 # noinspection PyUnusedLocal
+def to_twelve_admin(event):
+    global frame_num
+    frame_a_2.pack_forget()
+    frame_num = 112
+    frame_a_12.pack(fill="both", expand=True)
+    frame_a_12.focus_set()
+
+
+# noinspection PyUnusedLocal
 def to_eleven_admin(event):
     global frame_num
     frame_a_3.pack_forget()
@@ -2123,13 +2298,13 @@ def to_eleven_admin(event):
 # noinspection PyUnusedLocal
 def to_eight_admin(event):
     global frame_num
-    global subframe_num
+    global sub_frame_num
     if frame_num == 101:
         frame_a_1.pack_forget()
     if frame_num == 102:
         frame_a_2.pack_forget()
     frame_num = 108
-    subframe_num = 11
+    sub_frame_num = 11
     name_admin_pin.set('')
     name_admin_pin_confirm.set('')
     name_admin_pass.set('')
@@ -2392,6 +2567,8 @@ def to_second_admin(event):
         frame_a_43.pack_forget()
     elif frame_num == 111:
         frame_a_11.pack_forget()
+    elif frame_num == 112:
+        frame_a_12.pack_forget()
     frame_num = 102
     frame_a_2.pack(fill="both", expand=True)
     frame_a_2.focus_set()
@@ -2523,6 +2700,8 @@ def to_zero_screen(event):
         frame_a_48.pack_forget()
     elif frame_num == 111:
         frame_a_11.pack_forget()
+    elif frame_num == 112:
+        frame_a_12.pack_forget()
     frame_num = 0
     frame_0.pack(fill="both", expand=True)
     frame_0.focus_set()
@@ -2550,6 +2729,25 @@ def hundreds_label_on_off(event):
         else:
             hundreds_label_active = True
             show_service_key_message("HUNDREDTHS of a Second")
+
+
+# noinspection PyUnusedLocal
+def energy_rate_second_screen_on_off(event):
+    global show_rate_second_screen
+    if not debug_mode:
+        if show_rate_second_screen:
+            show_rate_second_screen = False
+            name_cur_price.set("")
+            label_2_1_1.configure(text="")
+            label_2_1_2.configure(text="")
+            entry_2_0.configure(relief='flat', highlightthickness=0)
+            show_service_key_message("NO ENERGY RATE in 'Entering Charger #' screen")
+        else:
+            show_rate_second_screen = True
+            label_2_1_1.configure(text="Current Rate:")
+            label_2_1_2.configure(text="($/kWh)")
+            entry_2_0.configure(relief='sunken')
+            show_service_key_message("ENERGY RATE in 'Entering Charger #' screen")
 
 
 # noinspection PyUnusedLocal
@@ -2581,25 +2779,6 @@ def kwh_fourth_screen_on_off(event):
             if show_rate_fourth_screen:
                 nodes_can.get_label_price_kwh().configure(text=" ($/kwh)")
             show_service_key_message("KWH on 'Charger #' Info screen")
-
-
-# noinspection PyUnusedLocal
-def energy_rate_second_screen_on_off(event):
-    global show_rate_second_screen
-    if not debug_mode:
-        if show_rate_second_screen:
-            show_rate_second_screen = False
-            name_cur_price.set("")
-            label_2_1_1.configure(text="")
-            label_2_1_2.configure(text="")
-            entry_2_0.configure(relief='flat', highlightthickness=0)
-            show_service_key_message("NO ENERGY RATE in 'Entering Charger #' screen")
-        else:
-            show_rate_second_screen = True
-            label_2_1_1.configure(text="Current Rate:")
-            label_2_1_2.configure(text="($/kWh)")
-            entry_2_0.configure(relief='sunken')
-            show_service_key_message("ENERGY RATE in 'Entering Charger #' screen")
 
 
 # noinspection PyUnusedLocal
@@ -2709,6 +2888,24 @@ def node_reset_when_user_unplug_cable_on_off(event):
 
 
 # noinspection PyUnusedLocal
+def switch_display_mode_amp_watt(event):
+    if not debug_mode:
+        if nodes_can is not None:
+            nodes_can.increment_display_mode_amp_watt_time_cost()
+            display_mode = nodes_can.get_display_mode_amp_watt_time_cost()
+            if display_mode == 0:
+                show_service_key_message("Display AMP")
+            elif display_mode == 1:
+                show_service_key_message("Display KW")
+            elif display_mode == 2:
+                show_service_key_message("Display TIME")
+            elif display_mode == 3:
+                show_service_key_message("Display KWH")
+            else:
+                show_service_key_message("Display COST")
+
+
+# noinspection PyUnusedLocal
 def nodes_restart(event):
     if not debug_mode:
         if nodes_can is not None:
@@ -2782,6 +2979,18 @@ def terminal_header_on_off(event):
         else:
             terminal_header = True
             show_service_key_message("HEADERS in CAN-Bus Log ENABLED")
+
+
+# noinspection PyUnusedLocal
+def full_log_on_off(event):
+    global full_logout_on
+    if not debug_mode:
+        if full_logout_on:
+            full_logout_on = False
+            show_service_key_message("Full LOGOUT OFF")
+        else:
+            full_logout_on = True
+            show_service_key_message("Full LOGOUT ON")
 
 
 def entry_node():
@@ -3331,7 +3540,7 @@ def key_press_a_2(event):
     elif event.keysym == '3' or num_pad_num_pressed == '3':
         pass
     elif event.keysym == '4' or num_pad_num_pressed == '4':
-        pass
+        to_twelve_admin(event)
     elif event.keysym == '5' or num_pad_num_pressed == '5':
         to_eight_admin(event)
 
@@ -3367,7 +3576,7 @@ pl_y2 = [0.2, 0.45, 0.7]
 tl = ["Infrastructure\nSetup",
       "Check Setup",
       "Check Log",
-      "Ping Node #",
+      "Infrastructure\nLookup",
       "Admin PIN &\nPassword change",
       '']
 
@@ -5816,7 +6025,7 @@ frame_a_8_1 = tk.Frame(root, bg=color_back)
 
 # noinspection PyUnusedLocal
 def get_entry_a_8_1_1(event):
-    global subframe_num
+    global sub_frame_num
     pin_entry = name_admin_pin.get()
     if len(pin_entry) != PIN_TEXT_LENGTH:
         name_admin_pin.set('')
@@ -5827,7 +6036,7 @@ def get_entry_a_8_1_1(event):
         name_admin_pin.set('')
         return
     entry_a_8_1_2.focus_set()
-    subframe_num = 12
+    sub_frame_num = 12
 
 
 def clear_entry_a_8_1_1(event):
@@ -5844,7 +6053,7 @@ def insert_entry_a_8_1_1(event):
 
 
 def get_entry_a_8_1_2(event):
-    global subframe_num
+    global sub_frame_num
     pin_entry = name_admin_pin_confirm.get()
     if len(pin_entry) != PIN_TEXT_LENGTH:
         name_admin_pin_confirm.set('')
@@ -5861,18 +6070,18 @@ def get_entry_a_8_1_2(event):
         name_admin_pin.set('')
         name_admin_pin_confirm.set('')
         entry_a_8_1_1.focus_set()
-        subframe_num = 11
+        sub_frame_num = 11
 
 
 # noinspection PyUnusedLocal
 def clear_entry_a_8_1_2(event):
-    global subframe_num
+    global sub_frame_num
     if len(name_admin_pin_confirm.get()) == 0:
         name_admin_pass.set('')
         name_admin_pass_confirm.set('')
         entry_a_8_1_1.delete(0, tk.END)
         entry_a_8_1_1.focus_set()
-        subframe_num = 11
+        sub_frame_num = 11
     else:
         entry_a_8_1_2.delete(0, tk.END)
 
@@ -5950,23 +6159,23 @@ label_a_8_1_2_2.place(relx=0.5, rely=0.7, anchor='center')
 
 # noinspection PyUnusedLocal
 def to_admin_eight_second(event):
-    global subframe_num
+    global sub_frame_num
     frame_a_8_1.pack_forget()
     frame_a_8_2.pack(fill="both", expand=True)
     frame_a_8_2.focus_set()
-    subframe_num = 2
+    sub_frame_num = 2
 
 
 # noinspection PyUnusedLocal
 def to_admin_eight_third(event):
-    global subframe_num
+    global sub_frame_num
     frame_a_8_1.pack_forget()
     frame_a_8_2.pack_forget()
     name_admin_pass.set('')
     name_admin_pass_confirm.set('')
     frame_a_8_3.pack(fill="both", expand=True)
     entry_a_8_3_1.focus_set()
-    subframe_num = 31
+    sub_frame_num = 31
 
 
 frame_a_8_2 = tk.Frame(root, bg=color_back)
@@ -6016,7 +6225,7 @@ frame_a_8_3 = tk.Frame(root, bg=color_back)
 
 # noinspection PyUnusedLocal
 def get_entry_a_8_3_1(event):
-    global subframe_num
+    global sub_frame_num
     pass_entry = name_admin_pass.get()
     if len(pass_entry) != PASSWORD_TEXT_LENGTH:
         name_admin_pass.set('')
@@ -6027,7 +6236,7 @@ def get_entry_a_8_3_1(event):
         name_admin_pass.set('')
         return
     entry_a_8_3_2.focus_set()
-    subframe_num = 32
+    sub_frame_num = 32
 
 
 def clear_entry_a_8_3_1(event):
@@ -6044,7 +6253,7 @@ def insert_entry_a_8_3_1(event):
 
 
 def get_entry_a_8_3_2(event):
-    global subframe_num
+    global sub_frame_num
     pass_entry = name_admin_pass_confirm.get()
     if len(pass_entry) != PASSWORD_TEXT_LENGTH:
         name_admin_pass_confirm.set('')
@@ -6061,17 +6270,17 @@ def get_entry_a_8_3_2(event):
         name_admin_pass.set('')
         name_admin_pass_confirm.set('')
         entry_a_8_3_1.focus_set()
-        subframe_num = 31
+        sub_frame_num = 31
 
 
 # noinspection PyUnusedLocal
 def clear_entry_a_8_3_2(event):
-    global subframe_num
+    global sub_frame_num
     if len(name_admin_pass_confirm.get()) == 0:
         name_admin_pass.set('')
         name_admin_pass_confirm.set('')
         entry_a_8_3_1.focus_set()
-        subframe_num = 31
+        sub_frame_num = 31
     else:
         entry_a_8_3_2.delete(0, tk.END)
 
@@ -6148,11 +6357,11 @@ label_a_8_3_2_2.place(relx=0.5, rely=0.7, anchor='center')
 
 # noinspection PyUnusedLocal
 def to_admin_eight_fourth(event):
-    global subframe_num
+    global sub_frame_num
     frame_a_8_3.pack_forget()
     frame_a_8_4.pack(fill="both", expand=True)
     frame_a_8_4.focus_set()
-    subframe_num = 4
+    sub_frame_num = 4
 
 
 def key_press_a_84(event):
@@ -6221,6 +6430,38 @@ label_a_11_3 = tk.Label(frame_a_11_3,
                         bg=color_back,
                         fg='white')
 label_a_11_3.place(relx=0.5, rely=0.5, anchor='center')
+
+
+frame_a_12 = tk.Frame(root, bg=color_back)
+
+frame_a_12.bind("<Escape>", to_second_admin)
+frame_a_12.bind("<<KpCancel>>", to_second_admin)
+
+frame_a_12_1 = tk.Frame(frame_a_12, bg='white')
+frame_a_12_1.place(relwidth=1, relheight=0.15)
+
+label_a_12_1 = tk.Label(frame_a_12_1,
+                        text="Power Line(s) Load",
+                        font=font_7_bold,
+                        fg=color_heading,
+                        bg='white')
+label_a_12_1.place(relx=0.5, rely=0.5, anchor='center')
+
+separator_a_12_1 = ttk.Separator(frame_a_12_1, orient='horizontal')
+separator_a_12_1.place(rely=0.975, relwidth=1, height=3)
+
+frame_a_12_2 = tk.Frame(frame_a_12, bg="white")
+frame_a_12_2.place(rely=0.15, relwidth=1, relheight=0.75)
+
+frame_a_12_3 = tk.Frame(frame_a_12, bg=color_back)
+frame_a_12_3.place(rely=0.9, relwidth=1, relheight=0.1)
+
+label_a_12_3 = tk.Label(frame_a_12_3,
+                        text="Cancel to return to Administration and Setup Menu",
+                        font=font_6,
+                        bg=color_back,
+                        fg='white')
+label_a_12_3.place(relx=0.5, rely=0.5, anchor='center')
 
 
 class PowerLineMap:
@@ -6313,7 +6554,67 @@ class PowerLineMap:
         self.draw()
 
 
+class PowerManagement:
+
+    def __init__(self):
+        self.__line_num = 0
+        self.__num = list()
+        self.__amp = list()
+        self.__nodes = list([])
+        self.__button_lines = list()
+        self.__button_nodes = list([])
+
+        self.__row_size = 5
+        self.__frame_a_11_line = list()
+
+        # self.redraw()
+
+
+class LogOut:
+
+    def __init__(self):
+
+        self.__full_log_file_name = self.new_time_full_log()
+        self.__charge_session_log_name = self.new_time_log_name()
+
+        if not os.path.exists(LOG_FOLDER):
+            os.makedirs(LOG_FOLDER)
+
+    @staticmethod
+    def new_time_full_log():
+        now = datetime.now()
+        file_name = "Full_Log_{}_{}_{}_{}_{}_{}.txt".format(now.year,
+                                                            now.month,
+                                                            now.day,
+                                                            now.hour,
+                                                            now.minute,
+                                                            now.second)
+        return LOG_FOLDER / file_name
+
+    @staticmethod
+    def new_time_log_name():
+        now = datetime.now()
+        file_name = "Charge_Log_{}_{}_{}_{}_{}_{}.txt".format(now.year,
+                                                              now.month,
+                                                              now.day,
+                                                              now.hour,
+                                                              now.minute,
+                                                              now.second)
+        return LOG_FOLDER / file_name
+
+    def full_log(self, text):
+        with open(self.__full_log_file_name, mode='a') as log_file:
+            log_file.write(text + "\n")
+
+    def charge_log(self, text):
+        with open(self.__charge_session_log_name, mode='a') as log_file:
+            log_file.write(text + "\n")
+
+
 power_line_map = PowerLineMap()
+power_management = PowerManagement()
+logout = LogOut()
+logout.charge_log(str(datetime.now()))
 
 # Hot-Keys for The Application Appearance
 root.bind("<Shift-Left>", to_full_screen)
@@ -6329,9 +6630,10 @@ root.bind("<Shift-F3>", show_node_user_or_admin)
 root.bind("<Shift-F5>", time_label_on_off)
 root.bind("<Shift-F6>", hundreds_label_on_off)
 
-root.bind("<Shift-F7>", energy_rate_fourth_screen_on_off)
-root.bind("<Shift-F8>", kwh_fourth_screen_on_off)
-root.bind("<Shift-F9>", energy_rate_second_screen_on_off)
+root.bind("<Shift-F7>", switch_display_mode_amp_watt)
+root.bind("<Shift-F8>", energy_rate_second_screen_on_off)
+root.bind("<Shift-F9>", energy_rate_fourth_screen_on_off)
+root.bind("<Shift-F10>", kwh_fourth_screen_on_off)
 
 root.bind("<Shift-F11>", user_pin_show_or_hide)
 root.bind("<Shift-F12>", admin_pass_show_or_hide)
@@ -6341,6 +6643,7 @@ root.bind("<Shift-F12>", admin_pass_show_or_hide)
 root.bind("<Alt-F5>", terminal_on_off)
 # root.bind("<Shift-F12>", terminal_header_on_off)
 root.bind("<Alt-F6>", terminal_header_on_off)
+root.bind("<Alt-F9>", full_log_on_off)
 root.bind("<Alt-F12>", debug_screen_power_map_on_off)
 
 # Alt-Shift Hot-Keys for CAN-Bus Control
@@ -6367,7 +6670,7 @@ root.bind("<Control-Shift-C>", force_charging_enabled_on_off)
 # root.bind("<Shift-F10>", system_restart)
 
 frame_num = 0
-subframe_num = 0
+sub_frame_num = 0
 debug_mode = get_debug_mode()
 key_pad = KeyPad()
 power_lines = PowerLines()
